@@ -72,7 +72,7 @@ deployment.apps/source-ip-app created
 ## `Type=ClusterIP` 인 서비스에서 소스 IP
 
 [iptables 모드](/ko/docs/concepts/services-networking/service/#proxy-mode-iptables)
-(기본값)에서 kube-proxy를 운영하는 경우 클러스터 내에서
+(kube-proxy 기본값)로 kube-proxy를 운영하는 경우 클러스터 내에서
 클러스터IP로 패킷을 보내면
 소스 NAT를 통과하지 않는다. kube-proxy가 실행중인 노드에서
 `http://localhost:10249/proxyMode` 를 입력해서 kube-proxy 모드를 조회할 수 있다.
@@ -98,7 +98,7 @@ curl localhost:10249/proxyMode
 iptables
 ```
 
-소스 IP 애플리케이션을 통해 서비스를 생성하여 소스 IP 주소 보존 여부를 테스트할 수 있다.
+아래명령어를 통해 소스 IP 주소 보존 여부를 테스트할 수 있는 source-ip-app 애플리케이션이 담긴 이름이 clusterip인 {{< glossary_tooltip term_id="pod" text="파드" >}}를 설치하고 이 파드를 서비스할 수 있는 이름이 clusterip인 {{< glossary_tooltip text="서비스" term_id="service" >}}를 생성한다.
 
 ```shell
 kubectl expose deployment source-ip-app --name=clusterip --port=80 --target-port=8080
@@ -116,7 +116,8 @@ NAME         TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
 clusterip    ClusterIP   10.0.170.92   <none>        80/TCP    51s
 ```
 
-그리고 동일한 클러스터의 파드에서 `클러스터IP`를 치면:
+그리고 동일한 클러스터내의 다른 파드의 쉘로 접속하거나 
+아래 명령어를 이용하여 임시 파드를 생성하고 접속한다. 에서 `클러스터IP`를 치면:
 
 ```shell
 kubectl run busybox -it --image=busybox --restart=Never --rm
@@ -127,7 +128,7 @@ Waiting for pod default/busybox to be running, status is Pending, pod ready: fal
 If you don't see a command prompt, try pressing enter.
 
 ```
-그런 다음 해당 파드 내에서 명령을 실행할 수 있다.
+그런 다음 해당 파드 내에서 일반적인 리눅스 명령을 실행할 수 있다.
 
 ```shell
 # "kubectl run" 으로 터미널 내에서 이것을 실행한다.
@@ -148,9 +149,9 @@ ip addr
        valid_lft forever preferred_lft forever
 ```
 
-그런 다음 `wget` 을 사용해서 로컬 웹 서버에 쿼리한다.
+현재 파드의 아이피가 10.244.3.8임을 확인하고  `wget` 을 사용해서 요청을 전송한다.
 ```shell
-# "10.0.170.92"를 "clusterip"라는 이름의 서비스의 IPv4 주소로 변경한다.
+# "10.0.170.92"는 "clusterip"라는 이름의 서비스의 IPv4 주소.
 wget -qO - 10.0.170.92
 ```
 ```
@@ -159,7 +160,7 @@ client_address=10.244.3.8
 command=GET
 ...
 ```
-`client_address` 는 클라이언트 파드와 서버 파드가 같은 노드 또는 다른 노드에 있는지 여부에 관계없이 항상 클라이언트 파드의 IP 주소이다.
+`client_address` 는 클라이언트 파드와 서버 파드가 같은 워커 노드 또는 다른 워커 노드에 있는지 여부에 관계없이 항상 접속을 시도하는 클라이언트 파드의 IP 주소 그대로 나오므로 NAT를 타지 않았다고 볼 수 있다.
 
 ## `Type=NodePort` 인 서비스에서 소스 IP
 
